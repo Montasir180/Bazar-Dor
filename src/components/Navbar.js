@@ -1,199 +1,170 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-import { getBanglaDate } from "@/lib/utils";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { authClient } from "@/lib/auth-client";
 import PriceTicker from "@/components/PriceTicker";
-
-const API_URL = "https://api.api-store.workers.dev/api/bazardor";
-
-const categoryIcons = {
-  chal: "🍚",
-  dal: "🫘",
-  tel: "🫙",
-  sobji: "🥬",
-  mach: "🐟",
-  mangsho: "🥩",
-  dim: "🥚",
-  moshla: "🌶️",
-};
-
-function getCategoryName(category) {
-  return (
-    category.nameBn ||
-    category.name_bn ||
-    category.name ||
-    category.title ||
-    "ক্যাটাগরি"
-  );
-}
-
-function getCategorySlug(category) {
-  return (
-    category.slug ||
-    category.id ||
-    category.key ||
-    ""
-  );
-}
-
-function getCategoryIcon(category) {
-  return (
-    category.emoji ||
-    category.icon ||
-    categoryIcons[getCategorySlug(category)] ||
-    "🛒"
-  );
-}
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const [categories, setCategories] = useState([]);
-  const [loadingCategories, setLoadingCategories] =
-    useState(true);
+  const { data: session, isPending } = authClient.useSession();
 
-  // Assignment অনুযায়ী API থেকেই categories আনছি
-  useEffect(() => {
-    let cancelled = false;
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
 
-    async function fetchCategories() {
-      try {
-        let response = await fetch(`${API_URL}/categories`);
+      const result = await authClient.signOut();
 
-        // Primary API কাজ না করলে assignment-এর alternative API
-        if (!response.ok) {
-          response = await fetch(
-            "https://api.abcz.workers.dev/api/bazardor/categories"
-          );
-        }
-
-        if (!response.ok) {
-          throw new Error("Categories API failed");
-        }
-
-        const data = await response.json();
-
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data.categories)
-          ? data.categories
-          : Array.isArray(data.data)
-          ? data.data
-          : [];
-
-        if (!cancelled) {
-          setCategories(list);
-        }
-      } catch (error) {
-        console.error("Categories API error:", error);
-      } finally {
-        if (!cancelled) {
-          setLoadingCategories(false);
-        }
+      if (result?.error) {
+        toast.error("সাইন আউট করা যায়নি। আবার চেষ্টা করুন।");
+        return;
       }
+
+      toast.success("সফলভাবে সাইন আউট হয়েছে!");
+
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("সাইন আউট করার সময় সমস্যা হয়েছে।");
+    } finally {
+      setLoggingOut(false);
     }
+  };
 
-    fetchCategories();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const categories = [
+    { name: "হোম", slug: "/", icon: "🏠" },
+    { name: "চাল", slug: "/category/chal", icon: "🍚" },
+    { name: "ডাল", slug: "/category/dal", icon: "🫘" },
+    { name: "তেল", slug: "/category/tel", icon: "🫙" },
+    { name: "সবজি", slug: "/category/shobji", icon: "🥬" },
+    { name: "মাছ", slug: "/category/mach", icon: "🐟" },
+    { name: "মাংস", slug: "/category/mangsho", icon: "🍗" },
+    { name: "ডিম-দুধ", slug: "/category/dim-dudh", icon: "🥛" },
+    { name: "মসলা", slug: "/category/moshla", icon: "🌶️" },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
-      {/* First row: Logo + date + Login/Logout */}
-      <div className="mx-auto flex h-[45px] max-w-[1200px] items-center justify-between px-3 sm:px-5">
-        <Link
-          href="/"
-          className="flex items-center gap-2"
-          aria-label="বাজার দর হোম"
-        >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-700 text-sm text-white">
+    <header className="sticky top-0 z-50 w-full border-b border-green-100 bg-white">
+      {/* Top Navbar */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        {/* Logo */}
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-700 text-xl">
             🛒
           </span>
 
-          <span className="flex flex-col">
-            <span className="text-[13px] font-bold leading-4 text-gray-900">
+          <span>
+            <span className="block text-base font-extrabold text-gray-900 sm:text-lg">
               বাজার দর
             </span>
 
-            <span className="text-[8px] leading-3 text-gray-500">
-              {getBanglaDate()}
+            <span className="block text-[10px] text-gray-500 sm:text-xs">
+              প্রয়োজনীয় পণ্যের দাম এক নজরে
             </span>
           </span>
         </Link>
 
-        {/* Login and Logout buttons */}
-        <div className="flex items-center gap-2">
-          <Link
-            href="/signin"
-            className="rounded-md border border-green-700 px-3 py-1 text-[10px] font-semibold text-green-800 transition hover:bg-green-50"
-          >
-            সাইন ইন
-          </Link>
+        {/* Authentication */}
+        <div className="flex shrink-0 items-center gap-2">
+          {isPending ? (
+            <div className="h-9 w-24 animate-pulse rounded-lg bg-gray-100" />
+          ) : session?.user ? (
+            <>
+              {/* Profile */}
+              <Link
+                href="/profile"
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition sm:text-sm ${
+                  pathname.startsWith("/profile")
+                    ? "border-green-700 bg-green-50 text-green-800"
+                    : "border-green-200 bg-white text-green-800 hover:bg-green-50"
+                }`}
+              >
+                {session.user.image ? (
+                  <img
+                    src={session.user.image}
+                    alt=""
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-800">
+                    {(session.user.name || session.user.email || "U")
+                      .charAt(0)
+                      .toUpperCase()}
+                  </span>
+                )}
 
-          <Link
-            href="/signup"
-            className="rounded-md bg-green-700 px-3 py-1 text-[10px] font-semibold text-white transition hover:bg-green-800"
-          >
-            সাইন আপ
-          </Link>
+                <span className="hidden sm:inline">
+                  {session.user.name || "প্রোফাইল"}
+                </span>
+
+                <span className="sm:hidden">প্রোফাইল</span>
+              </Link>
+
+              {/* Sign Out */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="rounded-lg bg-green-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-green-800 disabled:opacity-60 sm:text-sm"
+              >
+                {loggingOut ? "অপেক্ষা করুন..." : "সাইন আউট"}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/signin"
+                className="rounded-lg border border-green-700 px-3 py-2 text-xs font-semibold text-green-800 transition hover:bg-green-50 sm:text-sm"
+              >
+                সাইন ইন
+              </Link>
+
+              <Link
+                href="/signup"
+                className="rounded-lg bg-green-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800 sm:text-sm"
+              >
+                সাইন আপ
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Second row: API categories */}
+      {/* Category Navigation */}
       <nav className="border-t border-gray-100">
-        <div className="mx-auto flex min-h-[29px] max-w-[1200px] items-center justify-center gap-1 overflow-x-auto px-2 sm:gap-3">
-          <Link
-            href="/"
-            className={`flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[10px] transition ${
-              pathname === "/"
-                ? "bg-green-50 font-bold text-green-800"
-                : "text-gray-700 hover:bg-green-50"
-            }`}
-          >
-            🏠 হোম
-          </Link>
+        <div className="mx-auto flex max-w-7xl items-center justify-start gap-1 overflow-x-auto px-3 py-2 sm:justify-center sm:gap-3 sm:px-6">
+          {categories.map((category) => {
+            const isActive =
+              category.slug === "/"
+                ? pathname === "/"
+                : pathname === category.slug ||
+                  pathname.startsWith(`${category.slug}/`);
 
-          {loadingCategories ? (
-            <span className="text-[10px] text-gray-400">
-              ক্যাটাগরি লোড হচ্ছে...
-            </span>
-          ) : (
-            categories.map((category, index) => {
-              const slug = getCategorySlug(category);
-
-              if (!slug) return null;
-
-              const href = `/category/${slug}`;
-
-              const isActive = pathname === href;
-
-              return (
-                <Link
-                  key={slug || index}
-                  href={href}
-                  className={`flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[10px] transition ${
-                    isActive
-                      ? "bg-green-50 font-bold text-green-800"
-                      : "text-gray-700 hover:bg-green-50"
-                  }`}
-                >
-                  <span>{getCategoryIcon(category)}</span>
-
-                  <span>{getCategoryName(category)}</span>
-                </Link>
-              );
-            })
-          )}
+            return (
+              <Link
+                key={category.slug}
+                href={category.slug}
+                className={`flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-medium transition sm:text-sm ${
+                  isActive
+                    ? "bg-green-100 text-green-800"
+                    : "text-gray-600 hover:bg-green-50 hover:text-green-800"
+                }`}
+              >
+                <span>{category.icon}</span>
+                <span>{category.name}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
-      {/* Third row: API price ticker */}
+      {/* Price Ticker */}
       <PriceTicker />
     </header>
   );
