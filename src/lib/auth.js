@@ -1,0 +1,33 @@
+import { betterAuth } from "better-auth";
+import { MongoClient } from "mongodb";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+
+const mongoUrl = process.env.MONGO_DB_URL;
+
+if (!mongoUrl) {
+  throw new Error("MONGO_DB_URL is missing from .env.local");
+}
+
+const client = new MongoClient(mongoUrl);
+const db = client.db("bazardor");
+
+export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
+
+  database: mongodbAdapter(db, {
+    client,
+  }),
+
+  emailAndPassword: {
+    enabled: true,
+  },
+
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    },
+  },
+
+  trustedOrigins: ["http://localhost:3000"],
+});
