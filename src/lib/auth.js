@@ -5,7 +5,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 const mongoUrl = process.env.MONGO_DB_URL;
 
 if (!mongoUrl) {
-  throw new Error("MONGO_DB_URL is missing from .env.local");
+  throw new Error("MONGO_DB_URL is missing from environment variables");
 }
 
 const client = new MongoClient(mongoUrl);
@@ -29,5 +29,7 @@ export const auth = betterAuth({
     },
   },
 
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: [
+    "http://localhost:3000",
+  ],
 });
