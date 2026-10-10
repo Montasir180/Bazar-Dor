@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -66,43 +67,47 @@ function NavbarContent() {
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-green-100 bg-white shadow-sm">
-      {/* First Row: Logo + Authentication */}
+    <header className="sticky top-0 z-50 w-full max-w-full border-b border-green-100 bg-white shadow-sm">
+      {/* ROW 1: LOGO + AUTHENTICATION */}
+
       <div className="border-b border-gray-100">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-3">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-5 sm:py-3 lg:px-8">
           {/* Logo */}
+
           <Link
             href="/"
-            className="flex min-w-0 shrink items-center gap-2"
             aria-label="বাজার দর হোম পেজ"
+            className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-3"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-700 text-base sm:h-10 sm:w-10 sm:rounded-xl sm:text-xl">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-700 text-lg shadow-sm sm:h-11 sm:w-11 sm:text-xl">
               🛒
             </span>
 
             <span className="min-w-0">
-              <span className="block truncate text-sm font-extrabold leading-tight text-gray-900 sm:text-lg">
+              <span className="block truncate text-sm font-extrabold leading-tight text-gray-900 sm:text-lg lg:text-xl">
                 বাজার দর
               </span>
 
-              <span className="mt-0.5 hidden text-[10px] leading-tight text-gray-500 min-[360px]:block sm:text-xs">
+              <span className="mt-1 hidden text-[10px] leading-tight text-gray-500 min-[360px]:block sm:text-xs">
                 প্রয়োজনীয় পণ্যের দাম এক নজরে
               </span>
             </span>
           </Link>
 
           {/* Authentication */}
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+
+          <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
             {isPending ? (
-              <div className="h-8 w-16 animate-pulse rounded-lg bg-gray-100 sm:w-24" />
+              <div className="h-9 w-16 animate-pulse rounded-lg bg-gray-100 sm:h-10 sm:w-24" />
             ) : user ? (
               <>
                 {/* Profile */}
+
                 <Link
                   href="/profile"
                   title="আমার প্রোফাইল"
                   aria-label="আমার প্রোফাইল"
-                  className={`flex items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-xs font-semibold transition sm:gap-2 sm:px-3 sm:text-sm ${
+                  className={`flex min-h-9 items-center gap-1.5 rounded-xl px-1.5 py-1.5 text-xs font-semibold transition-colors sm:min-h-10 sm:gap-2 sm:px-3 sm:text-sm ${
                     pathname.startsWith("/profile")
                       ? "bg-green-100 text-green-800"
                       : "text-gray-700 hover:bg-green-50 hover:text-green-800"
@@ -120,37 +125,45 @@ function NavbarContent() {
                     </span>
                   )}
 
-                  <span className="hidden max-w-24 truncate min-[400px]:block">
+                  <span className="hidden max-w-28 truncate min-[400px]:block">
                     {user.name || "প্রোফাইল"}
                   </span>
 
-                  <span aria-hidden="true" className="hidden text-[10px] sm:block">
+                  <span
+                    aria-hidden="true"
+                    className="hidden text-xs sm:block"
+                  >
                     ▾
                   </span>
                 </Link>
 
-                {/* Sign Out */}
+                {/* Logout */}
+
                 <button
                   type="button"
                   onClick={handleLogout}
                   disabled={loggingOut}
-                  className="whitespace-nowrap rounded-lg border border-red-200 px-2 py-2 text-[11px] font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:text-sm"
+                  className="inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-red-200 px-2 py-2 text-[11px] font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:px-3 sm:text-sm"
                 >
                   {loggingOut ? "অপেক্ষা করুন..." : "সাইন আউট"}
                 </button>
               </>
             ) : (
               <>
+                {/* Sign In */}
+
                 <Link
                   href="/signin"
-                  className="whitespace-nowrap rounded-lg border border-green-700 px-2.5 py-2 text-[11px] font-semibold text-green-800 transition hover:bg-green-50 sm:px-4 sm:text-sm"
+                  className="inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-green-700 px-2.5 py-2 text-[11px] font-semibold text-green-800 transition-colors hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 sm:min-h-10 sm:px-4 sm:text-sm"
                 >
                   সাইন ইন
                 </Link>
 
+                {/* Sign Up */}
+
                 <Link
                   href="/signup"
-                  className="whitespace-nowrap rounded-lg bg-green-700 px-2.5 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-green-800 sm:px-4 sm:text-sm"
+                  className="inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-green-700 px-2.5 py-2 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 sm:min-h-10 sm:px-4 sm:text-sm"
                 >
                   সাইন আপ
                 </Link>
@@ -160,36 +173,75 @@ function NavbarContent() {
         </div>
       </div>
 
-      {/* Second Row: Horizontally Scrollable Categories */}
-      <nav
-        aria-label="পণ্যের বিভাগ"
-        className="border-b border-gray-100"
-      >
-        <div className="scrollbar-hide mx-auto flex w-full max-w-7xl items-center gap-1 overflow-x-auto overscroll-x-contain px-2 py-1.5 sm:justify-center sm:gap-2 sm:px-6">
-          {categories.map((category) => {
-            const active = isActiveCategory(category.slug);
+      {/* ROW 2: RESPONSIVE CATEGORY NAVIGATION */}
 
-            return (
-              <Link
-                key={category.slug}
-                href={category.slug}
-                aria-current={active ? "page" : undefined}
-                className={`flex shrink-0 items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-[11px] font-medium transition sm:px-3 sm:text-xs ${
-                  active
-                    ? "bg-green-100 text-green-800"
-                    : "text-gray-600 hover:bg-green-50 hover:text-green-800"
-                }`}
-              >
-                <span aria-hidden="true">{category.icon}</span>
-                <span>{category.name}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Second Row: Categories */}
+<nav
+  aria-label="পণ্যের বিভাগ"
+  className="w-full border-b border-gray-100 bg-white"
+>
+  <div
+    className="
+      mx-auto flex w-full max-w-7xl
+      items-center gap-1
+      overflow-x-auto overscroll-x-contain
+      px-2 py-1.5
+      sm:justify-center sm:gap-2 sm:px-4 sm:py-2
+      lg:gap-3
+    "
+    style={{
+      scrollbarWidth: "none",
+      msOverflowStyle: "none",
+      WebkitOverflowScrolling: "touch",
+    }}
+  >
+    {categories.map((category) => {
+      const active = isActiveCategory(category.slug);
 
-      {/* Third Row: Price Ticker */}
-      <PriceTicker />
+      return (
+        <Link
+          key={category.slug}
+          href={category.slug}
+          aria-current={active ? "page" : undefined}
+          className={`
+            relative flex shrink-0 items-center
+            justify-center gap-1
+            whitespace-nowrap rounded-lg
+            border px-2 py-1.5
+            text-[10px] font-semibold leading-tight
+            transition-colors duration-200
+            min-[375px]:px-2.5
+            sm:gap-1.5 sm:rounded-xl
+            sm:px-3 sm:py-2 sm:text-xs
+            ${
+              active
+                ? "border-green-200 bg-green-50 text-green-800"
+                : "border-transparent text-gray-600 hover:bg-green-50 hover:text-green-800"
+            }
+          `}
+        >
+          <span
+            aria-hidden="true"
+            className="text-[11px] leading-none sm:text-sm"
+          >
+            {category.icon}
+          </span>
+
+          <span>{category.name}</span>
+
+          {active && (
+            <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-green-600 sm:left-3 sm:right-3" />
+          )}
+        </Link>
+      );
+    })}
+  </div>
+</nav>
+      {/* ROW 3: PRICE TICKER */}
+
+      <div className="w-full min-w-0">
+        <PriceTicker />
+      </div>
     </header>
   );
 }
@@ -198,8 +250,8 @@ export default function Navbar() {
   return (
     <Suspense
       fallback={
-        <header className="w-full border-b border-green-100 bg-white">
-          <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6">
+        <header className="sticky top-0 z-50 w-full border-b border-green-100 bg-white">
+          <div className="mx-auto flex min-h-14 max-w-7xl items-center px-3 sm:px-5 lg:px-8">
             <span className="text-sm font-bold text-green-800 sm:text-base">
               🛒 বাজার দর
             </span>
@@ -211,3 +263,4 @@ export default function Navbar() {
     </Suspense>
   );
 }
+

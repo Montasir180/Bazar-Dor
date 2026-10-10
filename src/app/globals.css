@@ -25,3 +25,6 @@ body {
   margin-inline: auto;
 }
 
+html, body { width: 100%; max-width: 100%; overflow-x: clip; }
+
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; } .scrollbar-hide::-webkit-scrollbar { display: none; }
