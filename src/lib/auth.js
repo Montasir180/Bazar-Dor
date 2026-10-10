@@ -11,8 +11,13 @@ if (!mongoUrl) {
 const client = new MongoClient(mongoUrl);
 const db = client.db("bazardorweb");
 
+const appUrl =
+  process.env.BETTER_AUTH_URL || "http://localhost:3000";
+
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
+  appName: "BazarDor",
+
+  baseURL: appUrl,
 
   database: mongodbAdapter(db, {
     client,
@@ -29,5 +34,8 @@ export const auth = betterAuth({
     },
   },
 
-  trustedOrigins:process.env.BETTER_AUTH_URL ,
+  trustedOrigins: [
+    "http://localhost:3000",
+    "https://bazar-dor-bb1k-git-main-montasir2.vercel.app",
+  ],
 });
