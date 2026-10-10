@@ -460,10 +460,12 @@ export default function ProductDetailsClient() {
 
   useEffect(() => {
     const controller = new AbortController();
-
-    loadProduct(controller.signal);
+    const timeoutId = setTimeout(() => {
+      void loadProduct(controller.signal);
+    }, 0);
 
     return () => {
+      clearTimeout(timeoutId);
       controller.abort();
     };
   }, [loadProduct]);

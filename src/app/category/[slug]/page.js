@@ -417,63 +417,79 @@ function CategoryContent() {
   const [sort, setSort] = useState("default");
 
 
-  const loadData = useCallback(async () => {
-    if (!slug) {
-      setLoading(false);
-      setError("ক্যাটাগরি পাওয়া যায়নি।");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const [categoryResponse, productResponse] =
-        await Promise.all([
-          fetchFromApi("/categories"),
-          fetchFromApi("/products"),
-        ]);
-
-      const categoryList = getArray(
-        categoryResponse,
-        "categories"
-      );
-
-      const productList = getArray(
-        productResponse,
-        "products"
-      );
-
-      setCategories(categoryList);
-      setProducts(productList);
-
-      if (categoryList.length === 0) {
-        console.warn(
-          "Categories API returned no categories:",
-          categoryResponse
-        );
-      }
-
-      if (productList.length === 0) {
-        console.warn(
-          "Products API returned no products:",
-          productResponse
-        );
-      }
-    } catch (err) {
-      console.error("Category page API error:", err);
-
-      setError(
-        "API থেকে তথ্য লোড করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করো।"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [slug]);
-
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let isActive = true;
+
+    const loadData = async () => {
+      if (!slug) {
+        if (isActive) {
+          setLoading(false);
+          setError("ক্যাটাগরি পাওয়া যায়নি।");
+        }
+        return;
+      }
+
+      if (isActive) {
+        setLoading(true);
+        setError("");
+      }
+
+      try {
+        const [categoryResponse, productResponse] =
+          await Promise.all([
+            fetchFromApi("/categories"),
+            fetchFromApi("/products"),
+          ]);
+
+        if (!isActive) return;
+
+        const categoryList = getArray(
+          categoryResponse,
+          "categories"
+        );
+
+        const productList = getArray(
+          productResponse,
+          "products"
+        );
+
+        setCategories(categoryList);
+        setProducts(productList);
+
+        if (categoryList.length === 0) {
+          console.warn(
+            "Categories API returned no categories:",
+            categoryResponse
+          );
+        }
+
+        if (productList.length === 0) {
+          console.warn(
+            "Products API returned no products:",
+            productResponse
+          );
+        }
+      } catch (err) {
+        if (!isActive) return;
+
+        console.error("Category page API error:", err);
+
+        setError(
+          "API থেকে তথ্য লোড করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করো।"
+        );
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadData();
+
+    return () => {
+      isActive = false;
+    };
+  }, [slug]);
 
 
 
