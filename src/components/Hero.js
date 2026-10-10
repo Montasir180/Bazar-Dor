@@ -1,144 +1,118 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
-import { getBanglaDate } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
-function BasketIllustration() {
-  return (
-    <svg
-      viewBox="0 0 220 180"
-      className="h-[135px] w-[170px] sm:h-[165px] sm:w-[205px]"
-      role="img"
-      aria-label="বাজারের ঝুড়িতে বিভিন্ন পণ্য"
-    >
-      {/* Ground shadow */}
-      <ellipse
-        cx="110"
-        cy="164"
-        rx="82"
-        ry="10"
-        fill="#e5e7e3"
-      />
+const banglaWeekdays = [
+  "রবিবার",
+  "সোমবার",
+  "মঙ্গলবার",
+  "বুধবার",
+  "বৃহস্পতিবার",
+  "শুক্রবার",
+  "শনিবার",
+];
 
-      {/* Green vegetable */}
-      <path
-        d="M121 70 C111 51 116 34 132 23"
-        fill="none"
-        stroke="#168443"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+const banglaMonths = [
+  "জানুয়ারি",
+  "ফেব্রুয়ারি",
+  "মার্চ",
+  "এপ্রিল",
+  "মে",
+  "জুন",
+  "জুলাই",
+  "আগস্ট",
+  "সেপ্টেম্বর",
+  "অক্টোবর",
+  "নভেম্বর",
+  "ডিসেম্বর",
+];
 
-      <path
-        d="M132 23 C144 26 148 34 147 42 C137 39 132 32 132 23"
-        fill="#168443"
-      />
+function getBanglaDate() {
+  const now = new Date();
 
-      <ellipse cx="132" cy="69" rx="25" ry="32" fill="#20c46a" />
+  // Bangladesh local time
+  const dateString = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dhaka",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
 
-      {/* Tomato */}
-      <path
-        d="M78 74 C70 56 79 45 93 42"
-        fill="none"
-        stroke="#168443"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+  const [year, month, day] = dateString.split("-").map(Number);
 
-      <path
-        d="M93 42 C105 45 109 54 105 62"
-        fill="none"
-        stroke="#168443"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+  // Get weekday using Bangladesh's calendar date
+  const weekday = new Date(
+    Date.UTC(year, month - 1, day)
+  ).getUTCDay();
 
-      <circle cx="83" cy="82" r="24" fill="#f04452" />
+  const banglaNumber = (number) =>
+    String(number).replace(/\d/g, (digit) => "০১২৩৪৫৬৭৮৯"[digit]);
 
-      <ellipse
-        cx="75"
-        cy="74"
-        rx="6"
-        ry="10"
-        fill="#ff8d92"
-        transform="rotate(25 75 74)"
-      />
-
-      {/* Orange */}
-      <circle cx="112" cy="94" r="17" fill="#ff7918" />
-
-      {/* Purple onion */}
-      <circle cx="63" cy="99" r="14" fill="#b94bf3" />
-
-      {/* Yellow-orange vegetable */}
-      <path
-        d="M149 88 C147 74 157 66 169 69"
-        fill="none"
-        stroke="#168443"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-
-      <circle cx="158" cy="96" r="17" fill="#ffa500" />
-
-      {/* Basket body */}
-      <path
-        d="M51 103 L169 103 L157 154 Q155 161 147 161 L72 161 Q64 161 62 153 Z"
-        fill="#b9580b"
-      />
-
-      {/* Basket top */}
-      <path
-        d="M48 99 L172 99 L167 112 L53 112 Z"
-        fill="#85420c"
-      />
-
-      {/* Basket texture */}
-      <g
-        stroke="#773707"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        fill="none"
-      >
-        <path d="M72 114 L76 151" />
-        <path d="M94 114 L96 156" />
-        <path d="M116 114 L116 157" />
-        <path d="M138 114 L134 153" />
-        <path d="M158 114 L151 151" />
-      </g>
-    </svg>
-  );
+  return `${banglaWeekdays[weekday]}, ${banglaNumber(day)} ${banglaMonths[month - 1]}, ${banglaNumber(year)}`;
 }
 
 export default function Hero() {
-  return (
-    <section className="bg-[#f0f5f0] px-3 py-4 sm:px-5 sm:py-4">
-      <div className="mx-auto grid max-w-[710px] grid-cols-1 items-center gap-3 rounded-2xl border border-[#e0e9e0] bg-[#fbfdfb] px-4 py-4 sm:min-h-[180px] sm:grid-cols-[1fr_200px] sm:px-5 sm:py-3">
-        {/* Left side */}
-        <div className="min-w-0">
-          <span className="inline-flex rounded-full bg-[#e2f3e8] px-2 py-1 text-[9px] font-semibold text-green-700">
-            {getBanglaDate()}
-          </span>
+  const [date, setDate] = useState("");
 
-          <h1 className="mt-2 text-[22px] font-extrabold leading-tight tracking-tight text-[#202923] sm:text-[23px]">
+  useEffect(() => {
+    const updateDate = () => {
+      setDate(getBanglaDate());
+    };
+
+    updateDate();
+
+    // Update every minute to handle date changes at midnight
+    const interval = setInterval(updateDate, 60_000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <section className="bg-[#f0f5f0] px-3 py-5 sm:px-5 sm:py-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-5 overflow-hidden rounded-3xl border border-green-100 bg-[#fcfdfc] px-5 py-6 sm:px-8 sm:py-8 md:grid-cols-[1.5fr_0.8fr] md:gap-8 md:px-10 lg:px-12">
+        {/* Left Content */}
+        <div className="min-w-0">
+          {/* Real-time Bangladesh Date */}
+          <div className="mb-4 inline-flex max-w-full items-center rounded-full bg-[#e2f5e9] px-3 py-2 text-xs font-bold text-green-700 sm:mb-5 sm:px-4 sm:text-sm">
+            <span className="truncate">
+              {date || "তারিখ লোড হচ্ছে..."}
+            </span>
+          </div>
+
+          {/* Heading */}
+          <h1 className="max-w-3xl text-2xl font-extrabold leading-tight tracking-tight text-[#17251d] sm:text-3xl md:text-4xl lg:text-5xl">
             আজকের বাজারের দাম এক নজরে
           </h1>
 
-          <p className="mt-3 max-w-[390px] text-[10px] leading-[1.8] text-gray-500 sm:text-[11px]">
+          {/* Subtitle */}
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-600 sm:mt-5 sm:text-base sm:leading-8 md:text-lg">
             চাল, ডাল, তেল, সবজি, মাছ, মাংস, ডিম ও মসলার দাম —
-            বাজারভিত্তিক বিস্তারিত তথ্য, সহজে সর্বনিম্ন-সর্বোচ্চ এবং
-            বাজারের সর্বশেষ এক জায়গায়।
+            বাজারভিত্তিক বিস্তারিত তথ্য, সহজে সর্বনিম্ন-সর্বোচ্চ
+            এবং বাজারের সর্বশেষ এক জায়গায়।
           </p>
 
+          {/* CTA */}
           <Link
-            href="#সব-পণ্য"
-            className="mt-4 inline-flex h-[28px] items-center justify-center rounded-md bg-green-700 px-4 text-[10px] font-semibold text-white shadow-sm transition hover:bg-green-800"
+            href="/#সব-পণ্য"
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-green-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-green-800 active:scale-[0.98] sm:mt-7 sm:px-7 sm:text-base"
           >
             সব পণ্য দেখুন
           </Link>
         </div>
 
-        {/* Right side: original inline SVG */}
-        <div className="flex items-center justify-center sm:justify-end">
-          <BasketIllustration />
+        {/* Right Hero Image */}
+        <div className="relative mx-auto flex w-full max-w-[220px] items-center justify-center sm:max-w-[280px] md:max-w-[320px] lg:max-w-[360px]">
+          <Image
+            src="/bazar-hero.png"
+            alt="বাজারের বিভিন্ন পণ্যের ছবি"
+            width={500}
+            height={400}
+            priority
+            className="h-auto w-full object-contain"
+            sizes="(max-width: 640px) 220px, (max-width: 1024px) 280px, 360px"
+          />
         </div>
       </div>
     </section>
