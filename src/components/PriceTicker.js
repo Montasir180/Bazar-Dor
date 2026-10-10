@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Marquee from "react-fast-marquee";
 import { formatPrice, toBengaliNumber } from "@/lib/utils";
 
-const API_URL = "https://api.abcz.workers.dev/api/bazardor";
+const API_URL = "https://openapi.programming-hero.com/api/bazardor";
 
 const unitMap = {
   kg: "কেজি",

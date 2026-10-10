@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ProductCard from "@/components/ProductCard";
 
 const API_URL =
-  "https://api.api-store.workers.dev/api/bazardor";
+  "https://openapi.programming-hero.com/api/bazardor";
 
 function getDirection(product) {
   return product.change?.dir || "flat";
