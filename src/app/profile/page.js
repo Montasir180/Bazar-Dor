@@ -16,11 +16,7 @@ export default function ProfilePage() {
   const [updating, setUpdating] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  useEffect(() => {
-    if (user?.name) {
-      setName(user.name);
-    }
-  }, [user?.name]);
+  const inputName = name || user?.name || "";
 
   useEffect(() => {
     if (!isPending && !user) {

@@ -9,18 +9,12 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-/* =========================================
-   API CONFIGURATION
-========================================= */
 
 const API_URLS = [
   "https://api.api-store.workers.dev/api/bazardor",
   "https://api.abcz.workers.dev/api/bazardor",
 ];
 
-/* =========================================
-   HELPER FUNCTIONS
-========================================= */
 
 function getProducts(data) {
   if (Array.isArray(data)) {
@@ -50,7 +44,7 @@ function getProducts(data) {
   return [];
 }
 
-/* Convert price into a number */
+
 
 function getPrice(value) {
   const banglaDigits = "০১২৩৪৫৬৭৮৯";
@@ -65,13 +59,13 @@ function getPrice(value) {
   return Number(normalized) || 0;
 }
 
-/* Format price using Bangla digits */
+
 
 function formatPrice(value) {
   return Number(value || 0).toLocaleString("bn-BD");
 }
 
-/* Get product unit */
+
 
 function getUnit(unit) {
   const units = {
@@ -188,9 +182,7 @@ function getMarketPrices(market) {
   };
 }
 
-/* =========================================
-   FETCH PRODUCT
-========================================= */
+
 
 async function fetchProductBySlug(slug, signal) {
   let lastError = null;
@@ -201,10 +193,7 @@ async function fetchProductBySlug(slug, signal) {
     }
 
     try {
-      /*
-       * First attempt:
-       * Fetch a single product by slug.
-       */
+     
 
       const singleResponse = await fetch(
         `${baseUrl}/products/${encodeURIComponent(slug)}`,
@@ -242,10 +231,7 @@ async function fetchProductBySlug(slug, signal) {
         }
       }
 
-      /*
-       * Second attempt:
-       * Search the complete product list.
-       */
+   
 
       if (!foundProduct) {
         const response = await fetch(
@@ -291,9 +277,7 @@ async function fetchProductBySlug(slug, signal) {
   return null;
 }
 
-/* =========================================
-   LOADING UI
-========================================= */
+
 
 function ProductLoading() {
   return (
@@ -318,9 +302,7 @@ function ProductLoading() {
   );
 }
 
-/* =========================================
-   ERROR UI
-========================================= */
+
 
 function ProductError({
   error,
@@ -371,17 +353,12 @@ function ProductError({
   );
 }
 
-/* =========================================
-   MAIN PRODUCT DETAILS COMPONENT
-========================================= */
+
 
 export default function ProductDetailsClient() {
   const params = useParams();
 
-  /*
-   * Read slug from:
-   * /product/[slug]
-   */
+
 
   const slugValue = Array.isArray(params?.slug)
     ? params.slug[0]
@@ -395,9 +372,7 @@ export default function ProductDetailsClient() {
 
   const [error, setError] = useState("");
 
-  /* =========================================
-     LOAD PRODUCT
-  ========================================= */
+
 
   const loadProduct = useCallback(
     async (signal) => {
@@ -454,9 +429,7 @@ export default function ProductDetailsClient() {
     [slug]
   );
 
-  /* =========================================
-     LOAD PRODUCT WHEN SLUG CHANGES
-  ========================================= */
+ 
 
   useEffect(() => {
     const controller = new AbortController();
@@ -470,9 +443,7 @@ export default function ProductDetailsClient() {
     };
   }, [loadProduct]);
 
-  /* =========================================
-     RETRY BUTTON
-  ========================================= */
+
 
   const handleRetry = useCallback(() => {
     const controller = new AbortController();
@@ -480,17 +451,13 @@ export default function ProductDetailsClient() {
     loadProduct(controller.signal);
   }, [loadProduct]);
 
-  /* =========================================
-     LOADING STATE
-  ========================================= */
+
 
   if (loading) {
     return <ProductLoading />;
   }
 
-  /* =========================================
-     ERROR STATE
-  ========================================= */
+
 
   if (error || !product) {
     return (
@@ -501,9 +468,7 @@ export default function ProductDetailsClient() {
     );
   }
 
-  /* =========================================
-     PRODUCT DATA
-  ========================================= */
+
 
   const name = getProductName(product);
 
@@ -520,7 +485,7 @@ export default function ProductDetailsClient() {
     (item) => item.min > 0 && item.max > 0
   );
 
-  /* Minimum market price */
+
 
   const minimumPrice =
     validPrices.length > 0
@@ -529,7 +494,7 @@ export default function ProductDetailsClient() {
         )
       : null;
 
-  /* Maximum market price */
+
 
   const maximumPrice =
     validPrices.length > 0
@@ -538,7 +503,7 @@ export default function ProductDetailsClient() {
         )
       : null;
 
-  /* Average market price */
+
 
   const averagePrice =
     validPrices.length > 0
@@ -551,7 +516,6 @@ export default function ProductDetailsClient() {
         )
       : null;
 
-  /* Price change */
 
   const direction =
     product.change?.dir || "flat";
@@ -583,9 +547,7 @@ export default function ProductDetailsClient() {
       ? category.slug || category.id || ""
       : category || "";
 
-  /* =========================================
-     PRODUCT DETAILS UI
-  ========================================= */
+ 
 
   return (
     <main className="min-h-screen bg-[#f0f5f0] px-3 py-4 sm:py-5">
