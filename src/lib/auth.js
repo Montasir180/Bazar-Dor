@@ -12,7 +12,7 @@ const client = new MongoClient(mongoUrl);
 const db = client.db("bazardorweb");
 
 const appUrl =
-  process.env.BETTER_AUTH_URL || "http://localhost:3000";
+  process.env.BETTER_AUTH_URL || "http://localhost:3000" ||   "https://bazar-dor-bb1k.vercel.app";;
 
 export const auth = betterAuth({
   appName: "BazarDor",
