@@ -9,7 +9,7 @@ if (!mongoUrl) {
 }
 
 const client = new MongoClient(mongoUrl);
-const db = client.db("bazardor");
+const db = client.db("bazardorweb");
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -94,19 +94,32 @@ function getMarketName(market) {
 
 function getMarketPrices(market) {
   const min = getPrice(
-    market?.min ?? market?.minPrice ?? market?.min_price ?? market?.price
+    market?.min ??
+      market?.minPrice ??
+      market?.min_price ??
+      market?.price
   );
 
   const max = getPrice(
-    market?.max ?? market?.maxPrice ?? market?.max_price ?? market?.price
+    market?.max ??
+      market?.maxPrice ??
+      market?.max_price ??
+      market?.price
   );
 
   return { min, max };
 }
 
-export default function ProductDetailsPage() {
+function ProductDetailsContent() {
   const params = useParams();
-  const slug = decodeURIComponent(String(params?.slug ?? ""));
+
+  const slug = decodeURIComponent(
+    String(
+      Array.isArray(params?.slug)
+        ? params.slug[0] ?? ""
+        : params?.slug ?? ""
+    )
+  );
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -128,7 +141,7 @@ export default function ProductDetailsPage() {
 
     for (const baseUrl of API_URLS) {
       try {
-        // Prothome single-product endpoint try kori.
+        // First, try the single-product endpoint.
         const singleResponse = await fetch(
           `${baseUrl}/products/${encodeURIComponent(slug)}`,
           { cache: "no-store" }
@@ -137,23 +150,30 @@ export default function ProductDetailsPage() {
         if (singleResponse.ok) {
           const singleData = await singleResponse.json();
 
+          const candidate =
+            singleData?.product ??
+            singleData?.data?.product ??
+            singleData?.data ??
+            singleData;
+
           if (
-            singleData &&
-            !Array.isArray(singleData) &&
-            (singleData.id != null ||
-              singleData.slug != null ||
-              singleData._id != null ||
-              singleData.product)
+            candidate &&
+            !Array.isArray(candidate) &&
+            typeof candidate === "object" &&
+            (
+              candidate.id != null ||
+              candidate.slug != null ||
+              candidate._id != null ||
+              candidate.name != null ||
+              candidate.nameBn != null ||
+              candidate.name_bn != null
+            )
           ) {
-            foundProduct =
-              singleData.product ||
-              singleData.data?.product ||
-              singleData.data ||
-              singleData;
+            foundProduct = candidate;
           }
         }
 
-        // Single endpoint-e product na pele all-products endpoint theke khunji.
+        // If not found, search the complete product list.
         if (!foundProduct) {
           const response = await fetch(`${baseUrl}/products`, {
             cache: "no-store",
@@ -180,17 +200,116 @@ export default function ProductDetailsPage() {
 
     if (foundProduct) {
       setProduct(foundProduct);
-    } else if (lastError) {
+    } else {
       console.error("Product details API error:", lastError);
-      setError("পণ্যের তথ্য লোড করা যায়নি। আবার চেষ্টা করো।");
+
+      setError(
+        lastError
+          ? "পণ্যের তথ্য লোড করা যায়নি। আবার চেষ্টা করো।"
+          : "এই পণ্যটি API-তে পাওয়া যায়নি।"
+      );
     }
 
     setLoading(false);
   }, [slug]);
 
   useEffect(() => {
-    loadProduct();
-  }, [loadProduct]);
+    let cancelled = false;
+
+    async function load() {
+      if (!slug) {
+        setError("পণ্যের পরিচয় পাওয়া যায়নি।");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+      setProduct(null);
+
+      let foundProduct = null;
+      let lastError = null;
+
+      for (const baseUrl of API_URLS) {
+        try {
+          const singleResponse = await fetch(
+            `${baseUrl}/products/${encodeURIComponent(slug)}`,
+            { cache: "no-store" }
+          );
+
+          if (singleResponse.ok) {
+            const singleData = await singleResponse.json();
+
+            const candidate =
+              singleData?.product ??
+              singleData?.data?.product ??
+              singleData?.data ??
+              singleData;
+
+            if (
+              candidate &&
+              !Array.isArray(candidate) &&
+              typeof candidate === "object" &&
+              (
+                candidate.id != null ||
+                candidate.slug != null ||
+                candidate._id != null ||
+                candidate.name != null ||
+                candidate.nameBn != null ||
+                candidate.name_bn != null
+              )
+            ) {
+              foundProduct = candidate;
+            }
+          }
+
+          if (!foundProduct) {
+            const response = await fetch(`${baseUrl}/products`, {
+              cache: "no-store",
+            });
+
+            if (!response.ok) {
+              throw new Error(`Products API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const products = getProducts(data);
+
+            foundProduct =
+              products.find(
+                (item) => getProductId(item) === slug
+              ) || null;
+          }
+
+          if (foundProduct) break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      if (cancelled) return;
+
+      if (foundProduct) {
+        setProduct(foundProduct);
+      } else {
+        console.error("Product details API error:", lastError);
+
+        setError(
+          lastError
+            ? "পণ্যের তথ্য লোড করা যায়নি। আবার চেষ্টা করো।"
+            : "এই পণ্যটি API-তে পাওয়া যায়নি।"
+        );
+      }
+
+      setLoading(false);
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   if (loading) {
     return (
@@ -229,6 +348,7 @@ export default function ProductDetailsPage() {
 
           {error && (
             <button
+              type="button"
               onClick={loadProduct}
               className="mt-4 rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white"
             >
@@ -283,6 +403,7 @@ export default function ProductDetailsPage() {
       : null;
 
   const direction = product.change?.dir || "flat";
+
   const percentage = Math.abs(
     Number(product.change?.pct || 0)
   );
@@ -301,6 +422,11 @@ export default function ProductDetailsPage() {
         ? "▼"
         : "—";
 
+  const categorySlug =
+    typeof product.category === "object"
+      ? product.category?.slug || product.category?.id || ""
+      : product.category || "";
+
   return (
     <main className="min-h-screen bg-[#f0f5f0] px-3 py-4 sm:py-5">
       <div className="mx-auto max-w-[900px]">
@@ -312,16 +438,16 @@ export default function ProductDetailsPage() {
 
           <span>/</span>
 
-          <Link
-            href={`/category/${
-              typeof product.category === "object"
-                ? product.category.slug || product.category.id || ""
-                : product.category || ""
-            }`}
-            className="hover:text-green-700"
-          >
-            {getCategoryName(product)}
-          </Link>
+          {categorySlug ? (
+            <Link
+              href={`/category/${encodeURIComponent(categorySlug)}`}
+              className="hover:text-green-700"
+            >
+              {getCategoryName(product)}
+            </Link>
+          ) : (
+            <span>{getCategoryName(product)}</span>
+          )}
 
           <span>/</span>
 
@@ -331,207 +457,207 @@ export default function ProductDetailsPage() {
         </nav>
 
         {/* Product Summary */}
-<section className="rounded-xl border border-[#e3eae3] bg-[#fbfdfb] p-3 sm:p-4">
-  <div className="flex items-center justify-between gap-3">
-    <div className="flex min-w-0 items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#eff4ef] text-2xl sm:h-14 sm:w-14 sm:text-3xl">
-        {product.image || product.emoji || "🛒"}
-      </div>
+        <section className="rounded-xl border border-[#e3eae3] bg-[#fbfdfb] p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#eff4ef] text-2xl sm:h-14 sm:w-14 sm:text-3xl">
+                {product.image || product.emoji || "🛒"}
+              </div>
 
-      <div className="min-w-0">
-        <h1 className="text-base font-bold text-[#263129] sm:text-xl">
-          {name}
-        </h1>
+              <div className="min-w-0">
+                <h1 className="text-base font-bold text-[#263129] sm:text-xl">
+                  {name}
+                </h1>
 
-        <p className="mt-1 text-[10px] text-gray-500 sm:text-xs">
-          {getCategoryName(product)} · {unit}
-        </p>
+                <p className="mt-1 text-[10px] text-gray-500 sm:text-xs">
+                  {getCategoryName(product)} · {unit}
+                </p>
 
-        <p className="mt-1 text-[10px] text-gray-600 sm:text-xs">
-          সর্বশেষ বাজারদর ও পণ্যের বিস্তারিত তথ্য।
-        </p>
-      </div>
-    </div>
+                <p className="mt-1 text-[10px] text-gray-600 sm:text-xs">
+                  সর্বশেষ বাজারদর ও পণ্যের বিস্তারিত তথ্য।
+                </p>
+              </div>
+            </div>
 
-    <div className="shrink-0 rounded-lg bg-[#f0f5f0] px-3 py-2 text-center">
-      <p className="text-[9px] text-gray-500 sm:text-[10px]">
-        আজকের বাজারদর
-      </p>
+            <div className="shrink-0 rounded-lg bg-[#f0f5f0] px-3 py-2 text-center">
+              <p className="text-[9px] text-gray-500 sm:text-[10px]">
+                আজকের বাজারদর
+              </p>
 
-      <p className="mt-1 text-lg font-bold text-[#263129] sm:text-2xl">
-        {formatPrice(
-          product.today ??
-            product.currentPrice ??
-            product.price ??
-            0
-        )}
-      </p>
+              <p className="mt-1 text-lg font-bold text-[#263129] sm:text-2xl">
+                {formatPrice(
+                  product.today ??
+                    product.currentPrice ??
+                    product.price ??
+                    0
+                )}
+              </p>
 
-      <p className="text-[9px] text-gray-500">
-        টাকা / একক
-      </p>
+              <p className="text-[9px] text-gray-500">
+                টাকা / একক
+              </p>
 
-      <span className={`text-[9px] font-semibold ${changeClass}`}>
-        {changeIcon}{" "}
-        {percentage.toLocaleString("bn-BD", {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 1,
-        })}%
-      </span>
-    </div>
-  </div>
-</section>
+              <span className={`text-[9px] font-semibold ${changeClass}`}>
+                {changeIcon}{" "}
+                {percentage.toLocaleString("bn-BD", {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}
+                %
+              </span>
+            </div>
+          </div>
+        </section>
 
-       {/* Price Summary */}
-<section className="mt-3 rounded-xl border border-[#e3eae3] bg-[#fbfdfb] p-3 sm:p-4">
-  <h2 className="mb-3 text-sm font-bold text-[#263129]">
-    দামের সারসংক্ষেপ
-  </h2>
+        {/* Price Summary */}
+        <section className="mt-3 rounded-xl border border-[#e3eae3] bg-[#fbfdfb] p-3 sm:p-4">
+          <h2 className="mb-3 text-sm font-bold text-[#263129]">
+            দামের সারসংক্ষেপ
+          </h2>
 
-  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-    <div className="rounded-lg border border-[#e5ebe5] bg-white p-3">
-      <p className="text-[10px] text-gray-500 sm:text-xs">
-        সর্বনিম্ন দাম
-      </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="rounded-lg border border-[#e5ebe5] bg-white p-3">
+              <p className="text-[10px] text-gray-500 sm:text-xs">
+                সর্বনিম্ন দাম
+              </p>
 
-      <p className="mt-1 text-base font-bold text-green-700 sm:text-lg">
-        {minimumPrice === null
-          ? "তথ্য নেই"
-          : `${formatPrice(minimumPrice)} টাকা`}
-      </p>
+              <p className="mt-1 text-base font-bold text-green-700 sm:text-lg">
+                {minimumPrice === null
+                  ? "তথ্য নেই"
+                  : `${formatPrice(minimumPrice)} টাকা`}
+              </p>
 
-      <p className="mt-1 text-[9px] text-gray-500">
-        বাজারের সর্বনিম্ন মূল্য
-      </p>
-    </div>
+              <p className="mt-1 text-[9px] text-gray-500">
+                বাজারের সর্বনিম্ন মূল্য
+              </p>
+            </div>
 
-    <div className="rounded-lg border border-[#e5ebe5] bg-white p-3">
-      <p className="text-[10px] text-gray-500 sm:text-xs">
-        সর্বোচ্চ দাম
-      </p>
+            <div className="rounded-lg border border-[#e5ebe5] bg-white p-3">
+              <p className="text-[10px] text-gray-500 sm:text-xs">
+                সর্বোচ্চ দাম
+              </p>
 
-      <p className="mt-1 text-base font-bold text-red-600 sm:text-lg">
-        {maximumPrice === null
-          ? "তথ্য নেই"
-          : `${formatPrice(maximumPrice)} টাকা`}
-      </p>
+              <p className="mt-1 text-base font-bold text-red-600 sm:text-lg">
+                {maximumPrice === null
+                  ? "তথ্য নেই"
+                  : `${formatPrice(maximumPrice)} টাকা`}
+              </p>
 
-      <p className="mt-1 text-[9px] text-gray-500">
-        বাজারের সর্বোচ্চ মূল্য
-      </p>
-    </div>
+              <p className="mt-1 text-[9px] text-gray-500">
+                বাজারের সর্বোচ্চ মূল্য
+              </p>
+            </div>
 
-    <div className="rounded-lg border border-[#e5ebe5] bg-white p-3">
-      <p className="text-[10px] text-gray-500 sm:text-xs">
-        গড় দাম
-      </p>
+            <div className="rounded-lg border border-[#e5ebe5] bg-white p-3">
+              <p className="text-[10px] text-gray-500 sm:text-xs">
+                গড় দাম
+              </p>
 
-      <p className="mt-1 text-base font-bold text-[#263129] sm:text-lg">
-        {averagePrice === null
-          ? "তথ্য নেই"
-          : `${formatPrice(averagePrice)} টাকা`}
-      </p>
+              <p className="mt-1 text-base font-bold text-[#263129] sm:text-lg">
+                {averagePrice === null
+                  ? "তথ্য নেই"
+                  : `${formatPrice(averagePrice)} টাকা`}
+              </p>
 
-      <p className="mt-1 text-[9px] text-gray-500">
-        সব বাজারের গড় মূল্য
-      </p>
-    </div>
-  </div>
-</section>
-        
+              <p className="mt-1 text-[9px] text-gray-500">
+                সব বাজারের গড় মূল্য
+              </p>
+            </div>
+          </div>
+        </section>
 
-       {/* Market-wise Prices */}
-<section className="mt-3 rounded-xl border border-[#e3eae3] bg-[#fbfdfb] p-3 sm:p-4">
-  <div className="mb-3">
-    <h2 className="text-sm font-bold text-[#263129]">
-      বাজারভিত্তিক আজকের দাম
-    </h2>
+        {/* Market-wise Prices */}
+        <section className="mt-3 rounded-xl border border-[#e3eae3] bg-[#fbfdfb] p-3 sm:p-4">
+          <div className="mb-3">
+            <h2 className="text-sm font-bold text-[#263129]">
+              বাজারভিত্তিক আজকের দাম
+            </h2>
 
-    <p className="mt-1 text-[10px] text-gray-500">
-      বিভিন্ন বাজারের দামের তুলনা
-    </p>
-  </div>
+            <p className="mt-1 text-[10px] text-gray-500">
+              বিভিন্ন বাজারের দামের তুলনা
+            </p>
+          </div>
 
-  {marketPrices.length > 0 ? (
-    <div className="overflow-x-auto rounded-lg border border-[#e5ebe5]">
-      <table className="w-full min-w-[500px] border-collapse text-left text-[10px] sm:text-xs">
-        <thead className="bg-[#f0f5f0] text-gray-600">
-          <tr>
-            <th className="px-3 py-3 font-semibold">বাজার</th>
-            <th className="px-3 py-3 font-semibold">বিভাগ</th>
-            <th className="px-3 py-3 font-semibold">সর্বনিম্ন</th>
-            <th className="px-3 py-3 font-semibold">সর্বোচ্চ</th>
-            <th className="px-3 py-3 text-right font-semibold">
-              গড় দাম
-            </th>
-          </tr>
-        </thead>
+          {marketPrices.length > 0 ? (
+            <div className="overflow-x-auto rounded-lg border border-[#e5ebe5]">
+              <table className="w-full min-w-[500px] border-collapse text-left text-[10px] sm:text-xs">
+                <thead className="bg-[#f0f5f0] text-gray-600">
+                  <tr>
+                    <th className="px-3 py-3 font-semibold">বাজার</th>
+                    <th className="px-3 py-3 font-semibold">বিভাগ</th>
+                    <th className="px-3 py-3 font-semibold">সর্বনিম্ন</th>
+                    <th className="px-3 py-3 font-semibold">সর্বোচ্চ</th>
+                    <th className="px-3 py-3 text-right font-semibold">
+                      গড় দাম
+                    </th>
+                  </tr>
+                </thead>
 
-        <tbody>
-          {marketPrices.map(({ market, min, max }, index) => {
-            const marketAverage =
-              min > 0 && max > 0
-                ? Math.round((min + max) / 2)
-                : null;
+                <tbody>
+                  {marketPrices.map(({ market, min, max }, index) => {
+                    const marketAverage =
+                      min > 0 && max > 0
+                        ? Math.round((min + max) / 2)
+                        : null;
 
-            const division =
-              market.divisionBn ||
-              market.division_bn ||
-              market.divisionName ||
-              market.division_name ||
-              market.division ||
-              "—";
+                    const division =
+                      market.divisionBn ||
+                      market.division_bn ||
+                      market.divisionName ||
+                      market.division_name ||
+                      market.division ||
+                      "—";
 
-            return (
-              <tr
-                key={
-                  market.id ??
-                  market._id ??
-                  `${getMarketName(market)}-${index}`
-                }
-                className="border-t border-[#e5ebe5] bg-white transition hover:bg-[#f6faf6]"
-              >
-                <td className="px-3 py-3 font-medium text-[#263129]">
-                  {getMarketName(market)}
-                </td>
+                    return (
+                      <tr
+                        key={
+                          market.id ??
+                          market._id ??
+                          `${getMarketName(market)}-${index}`
+                        }
+                        className="border-t border-[#e5ebe5] bg-white transition hover:bg-[#f6faf6]"
+                      >
+                        <td className="px-3 py-3 font-medium text-[#263129]">
+                          {getMarketName(market)}
+                        </td>
 
-                <td className="px-3 py-3 text-gray-600">
-                  {typeof division === "object"
-                    ? division.nameBn || division.name || "—"
-                    : division}
-                </td>
+                        <td className="px-3 py-3 text-gray-600">
+                          {typeof division === "object"
+                            ? division.nameBn || division.name || "—"
+                            : division}
+                        </td>
 
-                <td className="px-3 py-3 text-green-700">
-                  {min > 0
-                    ? `${formatPrice(min)} টাকা`
-                    : "তথ্য নেই"}
-                </td>
+                        <td className="px-3 py-3 text-green-700">
+                          {min > 0
+                            ? `${formatPrice(min)} টাকা`
+                            : "তথ্য নেই"}
+                        </td>
 
-                <td className="px-3 py-3 text-red-600">
-                  {max > 0
-                    ? `${formatPrice(max)} টাকা`
-                    : "তথ্য নেই"}
-                </td>
+                        <td className="px-3 py-3 text-red-600">
+                          {max > 0
+                            ? `${formatPrice(max)} টাকা`
+                            : "তথ্য নেই"}
+                        </td>
 
-                <td className="px-3 py-3 text-right font-medium text-[#263129]">
-                  {marketAverage === null
-                    ? "তথ্য নেই"
-                    : `${formatPrice(marketAverage)} টাকা`}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  ) : (
-    <div className="rounded-lg border border-dashed border-[#dce7dc] bg-white p-6 text-center">
-      <p className="text-sm text-gray-500">
-        API-তে এই পণ্যের বাজারভিত্তিক দামের তথ্য পাওয়া যায়নি।
-      </p>
-    </div>
-  )}
-</section>
+                        <td className="px-3 py-3 text-right font-medium text-[#263129]">
+                          {marketAverage === null
+                            ? "তথ্য নেই"
+                            : `${formatPrice(marketAverage)} টাকা`}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-[#dce7dc] bg-white p-6 text-center">
+              <p className="text-sm text-gray-500">
+                API-তে এই পণ্যের বাজারভিত্তিক দামের তথ্য পাওয়া যায়নি।
+              </p>
+            </div>
+          )}
+        </section>
 
         <div className="mt-7">
           <Link
@@ -543,5 +669,32 @@ export default function ProductDetailsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ProductDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f0f5f0] px-3 py-8">
+          <div className="mx-auto max-w-[900px] animate-pulse space-y-5">
+            <div className="h-36 rounded-2xl bg-white" />
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="h-28 rounded-2xl bg-white"
+                />
+              ))}
+            </div>
+
+            <div className="h-56 rounded-2xl bg-white" />
+          </div>
+        </main>
+      }
+    >
+      <ProductDetailsContent />
+    </Suspense>
   );
 }
